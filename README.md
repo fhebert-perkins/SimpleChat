@@ -1,5 +1,5 @@
 # SimpleChat
-Simple telnet chat server with twisted
+Simple telnet chat server with twisted and python 2
 
 ## To Run
 
