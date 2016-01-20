@@ -22,8 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from twisted.internet import reactor, protocol, endpoints
-from twisted.protocols import basic
+from twisted.internet   import reactor, protocol, endpoints
+from twisted.protocols  import basic
 
 class PubProtocol(basic.LineReceiver):
     def __init__(self, factory):
@@ -39,13 +39,12 @@ class PubProtocol(basic.LineReceiver):
         self.sendLine("! Use /name <name> to rename yourself") # tell user how to change name
         self.broadcast("! {} has joined".format(self.name)) # tell all those who are connected that someone has connected
 
-
     def connectionLost(self, reason):
         self.broadcast("! {} has left".format(self.name)) # tell everyone that person has left
         self.factory.clients.remove(self) # remove from set
 
     def lineReceived(self, line):
-        line = line.encode("utf-8") # turn the bits sent into a string
+        line = line.decode("utf-8") # turn the bits sent into a string
         if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
