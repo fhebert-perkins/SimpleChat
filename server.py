@@ -1,12 +1,30 @@
 #! /bin/python2
 
+# The MIT License (MIT)
+#
+# Copyright (c) 2016 Finley Hebert-Perkins
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from twisted.internet import reactor, protocol, endpoints
 from twisted.protocols import basic
 import random
-import time
-
-def timestamp():
-    return time.strftime("%H:%M.%S")
 
 class PubProtocol(basic.LineReceiver):
     def __init__(self, factory):
@@ -28,7 +46,7 @@ class PubProtocol(basic.LineReceiver):
         self.factory.clients.remove(self) # remove from set
 
     def lineReceived(self, line):
-        line = str(line) # turn the bits sent into a string
+        line = line.encode("utf-8") # turn the bits sent into a string
         if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
