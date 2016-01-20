@@ -24,18 +24,17 @@
 
 from twisted.internet import reactor, protocol, endpoints
 from twisted.protocols import basic
-import random
 
 class PubProtocol(basic.LineReceiver):
     def __init__(self, factory):
         self.factory = factory
-        self.name = "Guest{}".format(random.randint(0, 100))
+        self.name = "Guest{}".format(len(self.factory.clients)+1)
 
     def broadcast(self, message):
         for c in self.factory.clients:
             c.sendLine(message)
 
-    def connectionMade(self): # On connection
+    def connectionMade(self): # On a new connection
         self.factory.clients.add(self) # add client to client set
         self.sendLine("! Use /name <name> to rename yourself") # tell user how to change name
         self.broadcast("! {} has joined".format(self.name)) # tell all those who are connected that someone has connected
