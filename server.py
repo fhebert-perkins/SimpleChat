@@ -63,7 +63,7 @@ class PubProtocol(basic.LineReceiver):
         elif line.startswith("/tell"): # privately say something to someone else
             for c in self.factory.clients:
                 if c.name in line.split(" ")[1].split(","):
-                    c.sendLine("[{}# {}".format(self.name, " ".join(line.split(" ")[2:])))
+                    c.sendLine("[{} # {}".format(self.name, " ".join(line.split(" ")[2:])))
         elif line.startswith("/help"): # help command
             self.sendLine("Help text:")
             self.sendLine("/name <name>         : sets your name")
