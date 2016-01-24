@@ -24,8 +24,9 @@
 
 from twisted.internet   import reactor, protocol, endpoints
 from twisted.protocols  import basic
+import .config as cfg
 
-class PubProtocol(basic.LineReceiver):
+class ChatProtocol(basic.LineReceiver):
     def __init__(self, factory):
         self.factory = factory
         self.name = "Guest{}".format(len(self.factory.clients)+1)
@@ -45,7 +46,7 @@ class PubProtocol(basic.LineReceiver):
 
     def lineReceived(self, line):
         line = line.decode("utf-8") # turn the bits sent into a string
-        if line.startswith("/name"): # name command
+        elif line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
                 self.name = line.split(" ")[1]
@@ -62,6 +63,7 @@ class PubProtocol(basic.LineReceiver):
             for c in self.factory.clients:
                 if c.name in line.split(" ")[1].split(","):
                     c.sendLine("[{} # {}".format(self.name, " ".join(line.split(" ")[2:])))
+
         elif line.startswith("/help"): # help command
             self.sendLine("Help text:")
             self.sendLine("/name <name>         : sets your name")
@@ -69,14 +71,14 @@ class PubProtocol(basic.LineReceiver):
             self.sendLine("/list                : list all users")
             self.sendLine("/tell <name> <msg>   : tell username something")
         else:
-            self.broadcast("[{}] {}".format(self.name, line)) # otherwise just broadcast it
+            self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line)) # otherwise just broadcast it
 
-class PubFactory(protocol.Factory):
+class ServerFactory(protocol.Factory):
     def __init__(self):
         self.clients = set()
 
     def buildProtocol(self, addr):
-        return PubProtocol(self)
+        return ChatProtocol(self)
 
-endpoints.serverFromString(reactor, "tcp:1234").listen(PubFactory())
+endpoints.serverFromString(reactor, "tcp:%s" % cfg.port).listen(ServerFactory())
 reactor.run()
