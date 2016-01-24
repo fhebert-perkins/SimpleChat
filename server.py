@@ -24,7 +24,7 @@
 
 from twisted.internet   import reactor, protocol, endpoints
 from twisted.protocols  import basic
-import .config as cfg
+import config as cfg
 
 class ChatProtocol(basic.LineReceiver):
     def __init__(self, factory):
@@ -46,7 +46,7 @@ class ChatProtocol(basic.LineReceiver):
 
     def lineReceived(self, line):
         line = line.decode("utf-8") # turn the bits sent into a string
-        elif line.startswith("/name"): # name command
+        if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
                 self.name = line.split(" ")[1]
