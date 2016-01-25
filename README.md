@@ -3,7 +3,7 @@ Simple telnet chat server with twisted and python 2
 
 ## Why?
 
-Simple chat was designed to be extremely portable and therefore requires no special client. Telnet is installed by default on OSX and most linux distros and easily installable on windows via the features system. This means that you can connect on almost any system. Netcat (`nc`) can also be used if you telnet is not available.
+Simple chat was designed to be extremely portable and therefore requires no special client. Telnet is installed by default on OSX and most linux distros and easily installable on windows via the features system. This means that you can connect on almost any system. Netcat (`nc`) can also be used if telnet is not available.
 
 This means that you can easily use it on locked down computers where installing new software is not always an option.
 
