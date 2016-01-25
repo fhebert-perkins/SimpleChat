@@ -35,7 +35,9 @@ $ python2 server.py
 ```
 $ telnet <ip address> 1234
 ```
+
 or
+
 ```
 $ nc <ip address> 1234
 ```
