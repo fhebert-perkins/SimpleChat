@@ -46,14 +46,17 @@ class ChatProtocol(basic.LineReceiver):
         self.factory.channels[self.channel].remove(self) # remove from set
 
     def lineReceived(self, line):
-        line = line.decode("utf-8") # turn the bits sent into a string
+        try:
+            line = line.decode("utf-8") # turn the bits sent into a string
+        except:
+            self.sendLine("! Malformed string sent")
+            return 0
         if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
                 self.name = line.split(" ")[1]
                 self.factory.channels[self.channel].remove(self)
                 self.factory.channels[self.channel].add(self)
-
 
         elif line.startswith("/me"): # me command
             self.broadcast(line.replace("/me", "*{}".format(self.name)))
@@ -91,6 +94,10 @@ class ChatProtocol(basic.LineReceiver):
             self.sendLine("/tell <name> <msg>   : tell username something")
             self.sendLine("/channel list        : list all channels")
             self.sendLine("/channel join <name> : join a channel")
+
+        elif line.startswith("/"): # catchall for malformed commands
+            self.sendLine("! command not recoignized")
+
         else:
             self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line)) # otherwise just broadcast it
 

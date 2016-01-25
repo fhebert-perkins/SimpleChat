@@ -14,7 +14,7 @@ This means that you can easily use it on locked down computers where installing 
 
 ### Caveats
 - Chat history is not saved on the server side
-- There is no authentication to make sure that a username is the same person
+- There is no authentication to make sure that a username consistantly the same person
 - No chat notification
 - Depending on your client output can be weird
 
