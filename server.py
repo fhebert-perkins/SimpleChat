@@ -29,20 +29,21 @@ import config as cfg
 class ChatProtocol(basic.LineReceiver):
     def __init__(self, factory):
         self.factory = factory
-        self.name = "Guest{}".format(len(self.factory.clients)+1)
+        self.name = "Guest{}".format(len(self.factory.channels[cfg.defaultChannel])+1)
+        self.channel = cfg.defaultChannel
 
     def broadcast(self, message):
-        for c in self.factory.clients:
+        for c in self.factory.channels[self.channel]:
             c.sendLine(message)
 
     def connectionMade(self): # On a new connection
-        self.factory.clients.add(self) # add client to client set
+        self.factory.channels[cfg.defaultChannel].add(self) # add client to client set
         self.sendLine("! Use /name <name> to rename yourself") # tell user how to change name
         self.broadcast("! {} has joined".format(self.name)) # tell all those who are connected that someone has connected
 
     def connectionLost(self, reason):
         self.broadcast("! {} has left".format(self.name)) # tell everyone that person has left
-        self.factory.clients.remove(self) # remove from set
+        self.factory.channels[self.channel].remove(self) # remove from set
 
     def lineReceived(self, line):
         line = line.decode("utf-8") # turn the bits sent into a string
@@ -50,32 +51,53 @@ class ChatProtocol(basic.LineReceiver):
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
                 self.name = line.split(" ")[1]
-                self.factory.clients.remove(self)
-                self.factory.clients.add(self)
+                self.factory.channels[self.channel].remove(self)
+                self.factory.channels[self.channel].add(self)
+
 
         elif line.startswith("/me"): # me command
             self.broadcast(line.replace("/me", "*{}".format(self.name)))
 
         elif line.startswith("/list"): # list all people connected
-            self.sendLine(", ".join([c.name for c in self.factory.clients]))
+            self.sendLine(", ".join([c.name for c in self.factory.channels[self.channel]]))
 
         elif line.startswith("/tell"): # privately say something to someone else
-            for c in self.factory.clients:
+            for c in self.factory.channels[self.channel]:
                 if c.name in line.split(" ")[1].split(","):
                     c.sendLine("[{} # {}".format(self.name, " ".join(line.split(" ")[2:])))
+
+        elif line.startswith("/channel"):
+            if len(line.split(" ")) == 1:
+                self.sendLine("! You are currently in {}".format(self.channel))
+            elif line.split(" ")[1] == "join":
+                newchannel = line.split(" ")[2]
+                if newchannel not in self.factory.channels.keys():
+                    self.factory.channels[newchannel] = set()
+                self.factory.channels[self.channel].remove(self)
+                self.factory.channels[newchannel].add(self)
+                self.broadcast("! {} has left the channel".format(self.name))
+                self.channel = newchannel
+                self.broadcast("! {} has joined the channel".format(self.name))
+            elif line.split(" ")[1] == "list":
+                self.sendLine(", ".join(self.factory.channels.keys()))
+            else:
+                self.sendLine("! Command not understood")
 
         elif line.startswith("/help"): # help command
             self.sendLine("Help text:")
             self.sendLine("/name <name>         : sets your name")
             self.sendLine("/me <action>         : says you did something")
-            self.sendLine("/list                : list all users")
+            self.sendLine("/list                : list all users in channel")
             self.sendLine("/tell <name> <msg>   : tell username something")
+            self.sendLine("/channel list        : list all channels")
+            self.sendLine("/channel join <name> : join a channel")
         else:
             self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line)) # otherwise just broadcast it
 
 class ServerFactory(protocol.Factory):
     def __init__(self):
-        self.clients = set()
+        self.channels = {}
+        self.channels[cfg.defaultChannel] = set()
 
     def buildProtocol(self, addr):
         return ChatProtocol(self)
