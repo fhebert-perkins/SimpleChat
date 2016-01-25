@@ -11,6 +11,8 @@ This means that you can easily use it on locked down computers where installing 
 - No need for a special client
 - Extremely portable
 - Server is very simple and easy to install on most server configurations
+- Different channels
+- All commands that you expect from a chat system
 
 ### Caveats
 - Chat history is not saved on the server side

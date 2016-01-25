@@ -51,6 +51,7 @@ class ChatProtocol(basic.LineReceiver):
         except:
             self.sendLine("! Malformed string sent")
             return 0
+
         if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
@@ -72,6 +73,7 @@ class ChatProtocol(basic.LineReceiver):
         elif line.startswith("/channel"):
             if len(line.split(" ")) == 1:
                 self.sendLine("! You are currently in {}".format(self.channel))
+
             elif line.split(" ")[1] == "join":
                 newchannel = line.split(" ")[2]
                 if newchannel not in self.factory.channels.keys():
@@ -81,8 +83,10 @@ class ChatProtocol(basic.LineReceiver):
                 self.broadcast("! {} has left the channel".format(self.name))
                 self.channel = newchannel
                 self.broadcast("! {} has joined the channel".format(self.name))
+
             elif line.split(" ")[1] == "list":
                 self.sendLine(", ".join(self.factory.channels.keys()))
+
             else:
                 self.sendLine("! Command not understood")
 
@@ -95,7 +99,7 @@ class ChatProtocol(basic.LineReceiver):
             self.sendLine("/channel list        : list all channels")
             self.sendLine("/channel join <name> : join a channel")
 
-        elif line.startswith("/"): # catchall for malformed commands
+        elif line.startswith("/"): # catchall for malformed or unrecoignized commands
             self.sendLine("! command not recoignized")
 
         else:
