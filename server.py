@@ -63,7 +63,7 @@ class ChatProtocol(basic.LineReceiver):
             self.broadcast(line.replace("/me", "*{}".format(self.name)))
 
         elif line.startswith("/list"): # list all people connected
-            self.sendLine(", ".join([c.name for c in self.factory.channels[self.channel]]))
+            self.sendLine(", ".join([c.name for c in self.factory.channels[self.channel]]).encode("utf-8"))
 
         elif line.startswith("/tell"): # privately say something to someone else
             for c in self.factory.channels[self.channel]:
@@ -85,7 +85,7 @@ class ChatProtocol(basic.LineReceiver):
                 self.broadcast("! {} has joined the channel".format(self.name))
 
             elif line.split(" ")[1] == "list":
-                self.sendLine(", ".join(self.factory.channels.keys()))
+                self.sendLine(", ".join(self.factory.channels.keys()).encode("utf-8"))
 
             else:
                 self.sendLine("! Command not understood")
