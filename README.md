@@ -13,12 +13,16 @@ This means that you can easily use it on locked down computers where installing 
 - Server is very simple and easy to install on most server configurations
 - Different channels
 - All commands that you expect from a chat system
+- (Semi) Anonymous
+- Hard to identify or block *Maybe*
 
 ### Caveats
 - Chat history is not saved on the server side
 - There is no authentication to make sure that a username consistantly the same person
 - No chat notification
 - Depending on your client output can be weird
+- No encryption or security
+- Vulnerable to DoS attacks (but what isn't)
 
 ## To Run
 

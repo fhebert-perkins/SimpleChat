@@ -32,17 +32,20 @@ class ChatProtocol(basic.LineReceiver):
         self.name = "Guest{}".format(len(self.factory.channels[cfg.defaultChannel])+1)
         self.channel = cfg.defaultChannel
 
-    def broadcast(self, message):
+    def broadcast(self, message, noEcho=True):
         for c in self.factory.channels[self.channel]:
-            c.sendLine(message)
+            if c.name != self.name and noEcho:
+                c.sendLine(message)
+            else:
+                c.sendLine(message)
 
     def connectionMade(self): # On a new connection
         self.factory.channels[cfg.defaultChannel].add(self) # add client to client set
         self.sendLine("! Use /name <name> to rename yourself") # tell user how to change name
-        self.broadcast("! {} has joined".format(self.name)) # tell all those who are connected that someone has connected
+        self.broadcast("! {} has joined".format(self.name), noEcho=False) # tell all those who are connected that someone has connected
 
     def connectionLost(self, reason):
-        self.broadcast("! {} has left".format(self.name)) # tell everyone that person has left
+        self.broadcast("! {} has left".format(self.name), noEcho = False) # tell everyone that person has left
         self.factory.channels[self.channel].remove(self) # remove from set
 
     def lineReceived(self, line):
@@ -54,41 +57,55 @@ class ChatProtocol(basic.LineReceiver):
 
         if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
-                self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
-                self.name = line.split(" ")[1]
-                self.factory.channels[self.channel].remove(self)
-                self.factory.channels[self.channel].add(self)
+                names = []
+                for channel in self.factory.channels:
+                    for c in self.factory.channels[channel]:
+                        names.append(c.name)
+                if line.split(" ")[1] not in names:
+                    self.broadcast("! {} is now {}".format(self.name, line.split(" ")[1]))
+                    self.name = line.split(" ")[1].encode("utf-8")
+                    self.factory.channels[self.channel].remove(self)
+                    self.factory.channels[self.channel].add(self)
+                else:
+                    self.sendLine("! That name is already in use")
+            else:
+                self.sendLine("! Command malformed")
+
+        elif line.startswith("/whoami"):
+            self.sendLine("! Your are {}".format(self.name))
 
         elif line.startswith("/me"): # me command
-            self.broadcast(line.replace("/me", "*{}".format(self.name)))
+            self.broadcast(line.replace("/me", "*{}".format(self.name)), noEcho=False)
 
         elif line.startswith("/list"): # list all people connected
-            self.sendLine(", ".join([c.name for c in self.factory.channels[self.channel]]).encode("utf-8"))
+            if len(line.split(" ")) == 1:
+                self.sendLine(", ".join([c.name for c in self.factory.channels[self.channel]]).encode("utf-8"))
+            elif line.split(" ")[1] == "list":
+                self.sendLine(", ".join(self.factory.channels.keys()).encode("utf-8"))
+            else:
+                self.sendLine("! Arguments not understood")
 
         elif line.startswith("/tell"): # privately say something to someone else
             for c in self.factory.channels[self.channel]:
                 if c.name in line.split(" ")[1].split(","):
                     c.sendLine("[{} # {}".format(self.name, " ".join(line.split(" ")[2:])))
 
+        elif line.startswith("/join"):
+            newchannel = line.split(" ")[1]
+            if newchannel not in self.factory.channels.keys():
+                self.factory.channels[newchannel] = set()
+            self.factory.channels[self.channel].remove(self)
+            self.factory.channels[newchannel].add(self)
+            self.broadcast("! {} has left {}".format(self.name, self.channel), noEcho=False)
+            self.channel = newchannel
+            self.broadcast("! {} has joined {}".format(self.name, self.channel), noEcho=False)
+
         elif line.startswith("/channel"):
             if len(line.split(" ")) == 1:
                 self.sendLine("! You are currently in {}".format(self.channel))
 
-            elif line.split(" ")[1] == "join":
-                newchannel = line.split(" ")[2]
-                if newchannel not in self.factory.channels.keys():
-                    self.factory.channels[newchannel] = set()
-                self.factory.channels[self.channel].remove(self)
-                self.factory.channels[newchannel].add(self)
-                self.broadcast("! {} has left the channel".format(self.name))
-                self.channel = newchannel
-                self.broadcast("! {} has joined the channel".format(self.name))
-
-            elif line.split(" ")[1] == "list":
-                self.sendLine(", ".join(self.factory.channels.keys()).encode("utf-8"))
-
             else:
-                self.sendLine("! Command not understood")
+                self.sendLine("! Invalid Arguments")
 
         elif line.startswith("/help"): # help command
             self.sendLine("Help text:")
@@ -96,11 +113,12 @@ class ChatProtocol(basic.LineReceiver):
             self.sendLine("/me <action>         : says you did something")
             self.sendLine("/list                : list all users in channel")
             self.sendLine("/tell <name> <msg>   : tell username something")
-            self.sendLine("/channel list        : list all channels")
-            self.sendLine("/channel join <name> : join a channel")
+            self.sendLine("/list channels       : list all channels")
+            self.sendLine("/join <name>         : join a channel")
+            self.sendLine("/whoami              : tells you what your name is")
 
         elif line.startswith("/"): # catchall for malformed or unrecoignized commands
-            self.sendLine("! command not recoignized")
+            self.sendLine("! Command not recoignized type /help for help")
 
         else:
             self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line)) # otherwise just broadcast it
@@ -113,5 +131,5 @@ class ServerFactory(protocol.Factory):
     def buildProtocol(self, addr):
         return ChatProtocol(self)
 
-endpoints.serverFromString(reactor, "tcp:%s" % cfg.port).listen(ServerFactory())
+endpoints.serverFromString(reactor, "tcp:{}".format(cfg.port)).listen(ServerFactory())
 reactor.run()
