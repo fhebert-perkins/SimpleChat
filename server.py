@@ -31,11 +31,14 @@ class ChatProtocol(basic.LineReceiver):
         self.factory = factory
         self.name = "Guest{}".format(len(self.factory.channels[cfg.defaultChannel])+1)
         self.channel = cfg.defaultChannel
+        self.away = False
 
     def broadcast(self, message, noEcho=True):
         for c in self.factory.channels[self.channel]:
-            if c.name != self.name and noEcho:
+            if c.name != self.name:
                 c.sendLine(message)
+            elif noEcho:
+                pass
             else:
                 c.sendLine(message)
 
@@ -54,7 +57,6 @@ class ChatProtocol(basic.LineReceiver):
         except:
             self.sendLine("! Malformed string sent")
             return 0
-
         if line.startswith("/name"): # name command
             if len(line.split(" ")) >= 2 :
                 names = []
@@ -89,6 +91,8 @@ class ChatProtocol(basic.LineReceiver):
             for c in self.factory.channels[self.channel]:
                 if c.name in line.split(" ")[1].split(","):
                     c.sendLine("[{} # {}".format(self.name, " ".join(line.split(" ")[2:])))
+                    if c.away:
+                        self.sendLine("! {} is currently away. They might not see the message you just sent".format(line.split(" ")[1].split(",")))
 
         elif line.startswith("/join"):
             newchannel = line.split(" ")[1]
@@ -103,25 +107,44 @@ class ChatProtocol(basic.LineReceiver):
         elif line.startswith("/channel"):
             if len(line.split(" ")) == 1:
                 self.sendLine("! You are currently in {}".format(self.channel))
-
             else:
                 self.sendLine("! Invalid Arguments")
+
+        elif line.startswith("/away"):
+            if self.away:
+                self.away = True
+                self.broadcast("! {} is now away".format(self.name), noEcho=True)
+            else:
+                self.away = False
+                self.broadcast("! {} is now back".format(self.name), noEcho=True)
+
+        elif line.startswith("/rules"):
+            self.sendLine(cfg.rules)
+
+        elif line.startswith("/exit"):
+            self.transport.loseConnection()
 
         elif line.startswith("/help"): # help command
             self.sendLine("Help text:")
             self.sendLine("/name <name>         : sets your name")
+            self.sendLine("/rules               : prints rules") # set in config.py
             self.sendLine("/me <action>         : says you did something")
             self.sendLine("/list                : list all users in channel")
             self.sendLine("/tell <name> <msg>   : tell username something")
             self.sendLine("/list channels       : list all channels")
             self.sendLine("/join <name>         : join a channel")
             self.sendLine("/whoami              : tells you what your name is")
+            self.sendLine("/away                : sets status as away")
+            self.sendLine("/exit                : terminates your connection")
 
-        elif line.startswith("/"): # catchall for malformed or unrecoignized commands
+        elif line.startswith("/"): # catch-all for malformed or unrecoignized commands
             self.sendLine("! Command not recoignized type /help for help")
 
         else:
-            self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line)) # otherwise just broadcast it
+            if cfg.echo:
+                self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line), noEcho=False) # otherwise just broadcast it
+            else:
+                self.broadcast("{0}{1}{2} {3}".format(cfg.antecedent, self.name, cfg.postscript, line)) # otherwise just broadcast it
 
 class ServerFactory(protocol.Factory):
     def __init__(self):
