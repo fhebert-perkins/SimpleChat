@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import asyncio
+import asyncio, json
 
 class Peer:
     def __init__(self, transport):
@@ -84,7 +84,6 @@ class ChatServerProtocol(asyncio.Protocol):
             return
         elif tokens[0] == "exit":
             self.peer.transport.close()
-            # self.connection_lost("Exited")
 
     def data_received(self, data):
         message = data.decode().strip()
@@ -105,19 +104,44 @@ class ChatServerProtocol(asyncio.Protocol):
             i+=1
 
 
-loop = asyncio.get_event_loop()
-# Each client connection will create a new protocol instance
-coro = loop.create_server(ChatServerProtocol, '127.0.0.1', 1234)
-server = loop.run_until_complete(coro)
+class Log:
 
-# Serve requests until Ctrl+C is pressed
-print('Serving on {}'.format(server.sockets[0].getsockname()))
-try:
-    loop.run_forever()
-except KeyboardInterrupt:
-    pass
+    def __init__(self, level):
+        self.level = level
 
-# Close the server
-server.close()
-loop.run_until_complete(server.wait_closed())
-loop.close()
+    def log(self, message, level=0):
+        if level >= self.level:
+            print(message)
+
+if __name__ == "__main__":
+    logger = Log(0)
+    logger.log("! Server starting")
+    logger.log("! Checking for config.json")
+    CONFIG = {
+    "ip":'127.0.0.1',
+    "port":1234
+    }
+    try:
+        CONFIG = json.loads(open("config.json", "r").read())
+        logger.log("! config.json found, using")
+    except FileNotFoundError:
+        logger.log("! No config.json file found, using default configuration")
+
+
+    loop = asyncio.get_event_loop()
+    # Each client connection will create a new protocol instance
+    coro = loop.create_server(ChatServerProtocol, CONFIG["ip"], CONFIG["port"])
+    server = loop.run_until_complete(coro)
+
+    # Serve requests until Ctrl+C is pressed
+    logger.log("! Serving at {} port {}".format(server.sockets[0].getsockname()[0], server.sockets[0].getsockname()[1]))
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        logger.log
+        pass
+
+    # Close the server
+    server.close()
+    loop.run_until_complete(server.wait_closed())
+    loop.close()
