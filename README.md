@@ -10,7 +10,7 @@ This means that you can easily use it on locked down computers where installing 
 ### Features
 - No need for a special client
 - Extremely portable
-- Server is very simple and easy to install on most server configurations
+- All you need is python3
 - Different channels
 - All commands that you expect from a chat system
 - (Semi) Anonymous
@@ -33,7 +33,7 @@ $ ./server.py
 or
 
 ```
-$ python2 server.py
+$ python3 server.py
 ```
 
 ## To connect

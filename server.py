@@ -54,49 +54,55 @@ class ChatServerProtocol(asyncio.Protocol):
         for peer in peers:
             peer.transport.write(message.encode("UTF-8"))
 
+    def handle_command(self, tokens):
+        if tokens[0] == "list":
+            self.echo(",".join([peer.name for peer in peers]))
+        elif tokens[0] == "name":
+            if len(tokens) == 3:
+                for peer in peers:
+                    if peer.name == tokens[1]:
+                        self.echo("! unable to set name to {} because that name is already in use".format(tokens[1]))
+                        return
+                self.broadcast("! {} changed thier name to {}".format(self.peer.name, tokens[1]))
+                self.peer.set_name(tokens[1])
+                return
+            else:
+                self.echo("! must specifiy a name to change")
+                return
+        elif tokens[0] == "whoami":
+            self.echo("! you are {}".format(self.peer.name))
+            return
+        elif tokens[0] == "me":
+            self.broadcast("*{} {}".format(self.peer.name, " ".join(tokens[2:])))
+            return
+        elif tokens[0] == "tell":
+            for peer in peers:
+                if peer.name == tokens[1]:
+                    peer.transport.write(" ".join(tokens[2:]))
+                    return
+            self.echo("! {} not found on server".join(tokens[2]))
+            return
+        elif tokens[0] == "exit":
+            self.peer.transport.close()
+            # self.connection_lost("Exited")
+
     def data_received(self, data):
         message = data.decode().strip()
         # command handling
         if message.startswith('/'):
-            message = message[1:]
-            if message.startswith("list"):
-                self.echo(",".join([peer.name for peer in peers]))
-            elif message.startswith("name"):
-                tokens = message.split(" ")
-                if len(tokens) == 2:
-                    for peer in peers:
-                        if peer.name == tokens[1]:
-                            self.echo("! unable to set name to {} because that name is already in use".format(tokens[1]))
-                            return
-                    self.broadcast("! {} changed thier name to {}".format(self.peer.name, tokens[1]))
-                    self.peer.set_name(tokens[1])
-                    return
-                else:
-                    self.echo("! must specifiy a name to change")
-                    return
-            elif message.startswith("whoami"):
-                self.echo("! you are {}".format(self.peer.name))
-                return
-            elif message.startswith("me"):
-                self.broadcast("*{} {}".format(self.peer.name, " ".join(message.split(" ")[1:])))
-                return
-            elif message.startswith("tell"):
-                tokens = message.split(" ")[1:]
-                for peer in peers:
-                    if peer.name == tokens[0]:
-                        peer.transport.write(" ".join(tokens[1:]))
-                        return
-                self.echo("! {} not found on server".join(tokens[0]))
-                return
-            elif message.startswith("exit"):
-                self.peer.transport.close()
+            self.handle_command(message[1:].split(" "))
         else:
             self.broadcast("<{}> {}".format(self.peer.name, message))
 
-        def connection_lost(self, exc):
-            self.broadcast("! {} has left the server".format(self.peer.name))
-            print("Connection from {} lost: {}".format(self.peername, exc))
-            del peers[peers.index(self.peer)]
+    def connection_lost(self, exc):
+        self.broadcast("! {} has left the server".format(self.peer.name))
+        print("Connection from {} lost: {}".format(self.peername, exc))
+        i = 0
+        for peer in peers:
+            if peer.name == self.peer.name:
+                del peers[i]
+                return
+            i+=1
 
 
 loop = asyncio.get_event_loop()
